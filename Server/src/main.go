@@ -36,11 +36,13 @@ func main() {
 	fmt.Println(os.Getenv("SONGS_PATH"))
 
 	// Parse the JSON data into a map of songs
+	fmt.Println(os.Getenv("JSON_PATH"))
 	songMap, err := models.ParseJSONToSongMap(os.Getenv("JSON_PATH"))
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		return
 	}
+	//Print my path
 
 	// Print the songs in the map
 	for key, song := range songMap {
@@ -51,6 +53,7 @@ func main() {
 		fmt.Printf("Artist: %s\n", song.Artist)
 		fmt.Println()
 	}
+	models.PlaySong("Never Gonna Give You Up", songMap)
 
 	http.ListenAndServe(":8080", nil)
 }
