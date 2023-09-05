@@ -6,5 +6,6 @@ import (
 )
 
 func PlaylistHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "playlist")
+	playlist := "My Number One\neye of the tiger\nnever gonna give you up\nnever gonna give you up\nric king\nsandstorm\nthrough the fire and flames\nwe are number one"
+	fmt.Fprintln(w, playlist)
 }
