@@ -1,0 +1,38 @@
+{
+    "1": {
+        "Name": "Never Gonna Give You Up",
+        "Genre": "Pop",
+        "FilePath": "./songs/never_gonna_give_you_up.mp3",
+        "Artist": "Rick Astley"
+    },
+    "2": {
+        "Name": "Eye of the Tiger",
+        "Genre": "Rock",
+        "FilePath": "./songs/eye-of-the-tiger.mp3",
+        "Artist": "Survivor"
+    },
+    "3": {
+        "Name": "Sandstorm",
+        "Genre": "Techno",
+        "FilePath": "./songs/sandstorm.mp3",
+        "Artist": "Darude"
+    },
+    "4": {
+        "Name": "Through the Fire and Flames",
+        "Genre": "Metal",
+        "FilePath": "./songs/through-the-fire-and-flames.mp3",
+        "Artist": "DragonForce"
+    },
+    "5": {
+        "Name": "We are number one",
+        "Genre": "Pop",
+        "FilePath": "./songs/we-are-number-one.mp3",
+        "Artist": "Robbie Rotten"
+    },
+    "6": {
+        "Name": "Mu Number One",
+        "Genre": "Pop",
+        "FilePath": "./songs/My Number One.mp3",
+        "Artist": "Rick Astley"
+    }
+}

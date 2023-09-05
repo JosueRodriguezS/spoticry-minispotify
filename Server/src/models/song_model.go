@@ -2,9 +2,7 @@ package models
 
 import (
 	"encoding/json"
-	"fmt"
-	"io"
-	"os"
+	"io/ioutil"
 )
 
 type Song struct {
@@ -18,31 +16,24 @@ type SongList struct {
 	songs map[string]Song
 }
 
-func populateMap(jsonpath string) map[string]Song {
-	// Open our jsonFile
-	jsonFile, err := os.Open(jsonpath)
-	// if we os.Open returns an error then handle it
+func ParseJSONToSongMap(filename string) (map[int]Song, error) {
+	// Read the JSON file
+	data, err := ioutil.ReadFile(filename)
 	if err != nil {
-		fmt.Println(err)
+		return nil, err
 	}
-	fmt.Println("Successfully Opened " + jsonpath)
-	// defer the closing of our jsonFile so that we can parse it later on
-	defer jsonFile.Close()
-	// read our opened xmlFile as a byte array.
-	byteValue, _ := io.ReadAll(jsonFile)
-	// we initialize our Users array
-	var songs []Song
-	// we unmarshal our byteArray which contains our
-	// jsonFile's content into 'users' which we defined above
-	json.Unmarshal(byteValue, &songs)
-	// json structure = {id:{name: "name", artist: "artist", genre: "genre", path: "relativepath = ./songs/"}}
-	songsMap := make(map[string]Song)
-	for _, song := range songs {
-		songsMap[song.Name] = song
-	}
-	return songsMap
 
+	// Create a map to store songs
+	songMap := make(map[int]Song)
+
+	// Unmarshal the JSON data into a map
+	if err := json.Unmarshal(data, &songMap); err != nil {
+		return nil, err
+	}
+
+	return songMap, nil
 }
+
 func CreateSongList() *SongList {
 	return &SongList{}
 }
