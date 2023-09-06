@@ -22,9 +22,17 @@ func main() {
 		fmt.Println("Error al cargar el archivo .env:", err)
 	}
 
+	songMap, err := models.ParseJSONToSongMap(os.Getenv("JSON_PATH"))
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+		return
+	}
+
 	r := mux.NewRouter()
 
-	r.HandleFunc("/play", handlers.PlayHandler).Methods("GET")
+	r.HandleFunc("/play/{songName}", func(w http.ResponseWriter, r *http.Request) {
+		handlers.PlayHandler(w, r, songMap) // Pasa songMap como argumento.
+	}).Methods("POST")
 	r.HandleFunc("/pause", handlers.PauseHandler).Methods("GET")
 	r.HandleFunc("/stop", handlers.StopHandler).Methods("GET")
 	r.HandleFunc("/next", handlers.NextHandler).Methods("GET")
@@ -37,12 +45,6 @@ func main() {
 
 	// Parse the JSON data into a map of songs
 	fmt.Println(os.Getenv("JSON_PATH"))
-	songMap, err := models.ParseJSONToSongMap(os.Getenv("JSON_PATH"))
-	if err != nil {
-		fmt.Printf("Error: %v\n", err)
-		return
-	}
-	//Print my path
 
 	// Print the songs in the map
 	for key, song := range songMap {
@@ -53,8 +55,6 @@ func main() {
 		fmt.Printf("Artist: %s\n", song.Artist)
 		fmt.Println()
 	}
-	models.PlaySong("Never Gonna Give You Up", songMap)
-
 	http.ListenAndServe(":8080", nil)
 }
 

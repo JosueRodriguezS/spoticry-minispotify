@@ -3,13 +3,53 @@ package models
 import (
 	"fmt"
 	"os"
+	"sync"
 
-	"time"
+	"github.com/faiface/beep"
+	"github.com/faiface/beep/mp3"
+	/*"github.com/hajimehoshi/go-mp3"
+	"github.com/hajimehoshi/oto/v2"*/)
 
-	"github.com/hajimehoshi/go-mp3"
-	"github.com/hajimehoshi/oto/v2"
-)
+type SongPlayer struct {
+	//queue of songs
+	Queue []Song
 
+	//Current song
+	current beep.StreamSeekCloser
+
+	mutex sync.Mutex
+}
+
+// Function to open and decode the audio/mp3 file in our current playList
+func OpenAndDecodeMp3File(songName string, songs map[int]Song) (beep.StreamSeekCloser, error) {
+	//get song path
+	filepath := BuildSongPath(songName, songs)
+	//check if the file exists
+	if _, err := os.Stat(filepath); os.IsNotExist(err) {
+		//retorna un error que indica que el path no existe
+		return nil, fmt.Errorf("File does not exist at path: %s", filepath)
+	}
+
+	//open the audio file|mp3
+	file, err := os.Open(filepath)
+	if err != nil {
+		//return an specific error for not being able to open the file
+		return nil, fmt.Errorf("Error opening the file: %v", err)
+	}
+
+	//Decode the audio file|mp3 in a stream of audio using beep
+	myStreamer, _, err := mp3.Decode(file) // Ignoramos la variable "format".
+	if err != nil {
+		file.Close()
+		//return an specific error for not being able to decode the file
+		return nil, fmt.Errorf("Error opening the file: %v", err)
+	}
+
+	//Return the streamer decoded
+	return myStreamer, nil
+}
+
+/*
 func Run(path string) error {
 	f, err := os.Open(path)
 	if err != nil {
@@ -63,3 +103,4 @@ func PlaySong(name string, songs map[int]Song) {
 	// Play the song
 	Run(path)
 }
+*/
