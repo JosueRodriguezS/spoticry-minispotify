@@ -1,19 +1,25 @@
 package main
 
-// API Rest to manage the server
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
-	"test.z/handlers"
-	"test.z/models"
-	//"github.com/faiface/beep"
-	//"github.com/faiface/beep/mp3"
-	//"github.com/faiface/beep/speaker"
 )
+
+type Song struct {
+	Name     string `json:"name"`
+	Genre    string `json:"genre"`
+	FilePath string `json:"filePath"`
+	Artist   string `json:"artist"`
+}
+
+var songs []Song
 
 func main() {
 
@@ -22,49 +28,83 @@ func main() {
 		fmt.Println("Error al cargar el archivo .env:", err)
 	}
 
-	songMap, err := models.ParseJSONToSongMap(os.Getenv("JSON_PATH"))
-	if err != nil {
-		fmt.Printf("Error: %v\n", err)
-		return
-	}
+	loadSongs()
 
 	r := mux.NewRouter()
+	r.HandleFunc("/songs", getSongList).Methods("GET")
+	r.HandleFunc("/songs", addSong).Methods("POST")
+	r.HandleFunc("/songs/{Name}", getSong).Methods("GET")
 
-	r.HandleFunc("/play/{songName}", func(w http.ResponseWriter, r *http.Request) {
-		handlers.PlayHandler(w, r, songMap) // Pasa songMap como argumento.
-	}).Methods("POST")
-	r.HandleFunc("/pause", handlers.PauseHandler).Methods("GET")
-	r.HandleFunc("/stop", handlers.StopHandler).Methods("GET")
-	r.HandleFunc("/next", handlers.NextHandler).Methods("GET")
-	r.HandleFunc("/previous", handlers.PreviousHandler).Methods("GET")
-	r.HandleFunc("/playlist", handlers.PlaylistHandler).Methods("GET")
 	http.Handle("/", r)
-
-	fmt.Println("Servidor API en ejecución en el puerto 8080...")
-	fmt.Println(os.Getenv("SONGS_PATH"))
-
-	// Parse the JSON data into a map of songs
-	fmt.Println(os.Getenv("JSON_PATH"))
-
-	// Print the songs in the map
-	for key, song := range songMap {
-		fmt.Printf("Key: %d\n", key)
-		fmt.Printf("Name: %s\n", song.Name)
-		fmt.Printf("Genre: %s\n", song.Genre)
-		fmt.Printf("FilePath: %s\n", song.Path)
-		fmt.Printf("Artist: %s\n", song.Artist)
-		fmt.Println()
-	}
 	http.ListenAndServe(":8080", nil)
 }
 
-/* data := []byte("Hola, esto es un ejemplo de codificación Base64 en Go")
-encoded := base64.StdEncoding.EncodeToString(data)
-fmt.Println(encoded)
+func loadSongs() {
+	file, err := os.Open(os.Getenv("SONGS_PATH") + "/songs.json")
+	if err != nil {
+		log.Fatal("Error opening songs.json:", err)
+		return
+	}
+	defer file.Close()
 
-decoded, err := base64.StdEncoding.DecodeString(encoded)
-if err != nil {
-	fmt.Println("Error:", err)
-	return
+	data, err := ioutil.ReadAll(file)
+	if err != nil {
+		log.Fatal("Error reading songs.json:", err)
+		return
+	}
+
+	err = json.Unmarshal(data, &songs)
+	if err != nil {
+		log.Fatal("Error unmarshaling songs.json:", err)
+		return
+	}
 }
-fmt.Println(string(decoded)) */
+
+func getSongList(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(songs)
+}
+
+func getSong(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	params := mux.Vars(r)
+
+	// Log the incoming request
+	fmt.Println("Request for song:", params["Name"])
+
+	for _, song := range songs {
+		if song.Name == params["Name"] {
+			json.NewEncoder(w).Encode(song)
+			return
+		}
+	}
+
+	// Return a proper error response if the song is not found
+	http.Error(w, "Song not found", http.StatusNotFound)
+}
+
+func addSong(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	// Parse the JSON request body into a Song struct
+	var newSong Song
+	err := json.NewDecoder(r.Body).Decode(&newSong)
+	if err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// Check if a song with the same name already exists
+	for _, existingSong := range songs {
+		if existingSong.Name == newSong.Name {
+			http.Error(w, "Song with the same name already exists", http.StatusConflict)
+			return
+		}
+	}
+
+	// Add the new song to the songs slice
+	songs = append(songs, newSong)
+
+	// Return the newly added song as the response
+	json.NewEncoder(w).Encode(newSong)
+}
