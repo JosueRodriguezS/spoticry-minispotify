@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
@@ -18,6 +19,13 @@ type Song struct {
 	Genre    string `json:"genre"`
 	FilePath string `json:"filePath"`
 	Artist   string `json:"artist"`
+}
+
+type SearchRequest struct {
+	Action   string `json:"action"`
+	Genre    string `json:"genre"`
+	Artist   string `json:"artist"`
+	SongName string `json:"songName"`
 }
 
 var songs []Song
@@ -80,17 +88,80 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		// Read message from client
 		messageType, p, err := conn.ReadMessage()
 		if err != nil {
-			fmt.Println(err)
-			return
+			fmt.Println("WebSocket read error:", err)
+			break
 		}
 
-		//Print the message from the client to the server terminal
-		fmt.Printf("Mensaje del cliente: %s\n", p)
+		// Decode the received message
+		var message map[string]interface{}
+		if err := json.Unmarshal(p, &message); err != nil {
+			fmt.Println("Error decoding WebSocket message:", err)
+			break
+		}
 
-		// Write message back to client
-		if err := conn.WriteMessage(messageType, p); err != nil {
-			fmt.Println(err)
-			return
+		// Check the action specified in the message
+		action, ok := message["action"].(string)
+		if !ok {
+			fmt.Println("Invalid action in WebSocket message")
+			break
+		}
+
+		switch action {
+		case "GetSong":
+			// Extract the song name from the message
+			songName, ok := message["songName"].(string)
+			if !ok {
+				fmt.Println("Invalid songName in WebSocket message")
+				break
+			}
+
+			// Find the song by name and send it as a response
+			var foundSong Song
+			for _, song := range songs {
+				if song.Name == songName {
+					foundSong = song
+					break
+				}
+			}
+
+			// Send the found song as a response
+			response, err := json.Marshal(foundSong)
+			if err != nil {
+				fmt.Println("Error encoding song response:", err)
+				break
+			}
+
+			// Send the response back to the client
+			if err := conn.WriteMessage(messageType, response); err != nil {
+				fmt.Println("Error sending song response:", err)
+				break
+			}
+		case "SearchSong":
+			searchRequest := SearchRequest{}
+			if err := json.Unmarshal(p, &searchRequest); err != nil {
+				fmt.Println("Error decoding WebSocket message:", err)
+				break
+			}
+
+			// Perform the song search and get the search results
+			searchResults := performSongSearch(searchRequest)
+
+			// Send the search results as a response
+			response, err := json.Marshal(searchResults)
+			if err != nil {
+				fmt.Println("Error encoding search response:", err)
+				break
+			}
+
+			// Send the response back to the client
+			if err := conn.WriteMessage(messageType, response); err != nil {
+				fmt.Println("Error sending search response:", err)
+				break
+			}
+		case "AddSong":
+
+		default:
+			fmt.Println("Unsupported action:", action)
 		}
 	}
 }
@@ -184,4 +255,122 @@ func searchSongs(w http.ResponseWriter, r *http.Request) {
 
 	// Retrun the filtered songs as the response
 	json.NewEncoder(w).Encode(result)
+}
+
+func performSongSearch(request SearchRequest) []Song {
+	// Initialize an empty result slice
+	var searchResults []Song
+
+	// Iterate through your songs and filter based on the search criteria
+	for _, song := range songs {
+		// Check if the genre matches (if provided)
+		if request.Genre != "" && song.Genre != request.Genre {
+			continue
+		}
+
+		// Check if the artist matches (if provided)
+		if request.Artist != "" && song.Artist != request.Artist {
+			continue
+		}
+
+		// Check if the song name contains the search term (if provided)
+		if request.SongName != "" && !strings.Contains(song.Name, request.SongName) {
+			continue
+		}
+
+		// If all criteria match or no criteria provided, add the song to results
+		searchResults = append(searchResults, song)
+	}
+
+	return searchResults
+}
+
+// Function to update the songs.json file by adding songs
+func updateAddSong(newSongs []Song) error {
+	// Open the songs.json file for reading and writing
+	filePath := os.Getenv("SONGS_PATH") + "/songs.json"
+	file, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, 0644)
+	if err != nil {
+		return fmt.Errorf("error opening songs.json: %v", err)
+	}
+	defer file.Close()
+
+	// Read the existing content
+	data, err := ioutil.ReadAll(file)
+	if err != nil {
+		return fmt.Errorf("error reading songs.json: %v", err)
+	}
+
+	// Unmarshal the existing content
+	var songs []Song
+	if err := json.Unmarshal(data, &songs); err != nil {
+		return fmt.Errorf("error unmarshaling songs.json: %v", err)
+	}
+
+	// Append the new songs
+	songs = append(songs, newSongs...)
+
+	// Marshal the updated content
+	updatedData, err := json.Marshal(songs)
+	if err != nil {
+		return fmt.Errorf("error marshaling songs.json: %v", err)
+	}
+
+	// Write the updated content back to the file
+	if err := ioutil.WriteFile(filePath, updatedData, 0644); err != nil {
+		return fmt.Errorf("error writing songs.json: %v", err)
+	}
+
+	return nil
+}
+
+// Function to update the songs.json file by deleting songs
+func updateDeleteSong(songsToDelete []Song) error {
+	// Open the songs.json file for reading and writing
+	filePath := os.Getenv("SONGS_PATH") + "/songs.json"
+	file, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, 0644)
+	if err != nil {
+		return fmt.Errorf("error opening songs.json: %v", err)
+	}
+	defer file.Close()
+
+	// Read the existing content
+	data, err := ioutil.ReadAll(file)
+	if err != nil {
+		return fmt.Errorf("error reading songs.json: %v", err)
+	}
+
+	// Unmarshal the existing content
+	var songs []Song
+	if err := json.Unmarshal(data, &songs); err != nil {
+		return fmt.Errorf("error unmarshaling songs.json: %v", err)
+	}
+
+	// Create a map of song names to be deleted for efficient lookup
+	songsToDeleteMap := make(map[string]struct{})
+	for _, song := range songsToDelete {
+		songsToDeleteMap[song.Name] = struct{}{}
+	}
+
+	// Filter out the songs to be deleted
+	var updatedSongs []Song
+	for _, song := range songs {
+		_, exists := songsToDeleteMap[song.Name]
+		if !exists {
+			updatedSongs = append(updatedSongs, song)
+		}
+	}
+
+	// Marshal the updated content
+	updatedData, err := json.Marshal(updatedSongs)
+	if err != nil {
+		return fmt.Errorf("error marshaling songs.json: %v", err)
+	}
+
+	// Write the updated content back to the file
+	if err := ioutil.WriteFile(filePath, updatedData, 0644); err != nil {
+		return fmt.Errorf("error writing songs.json: %v", err)
+	}
+
+	return nil
 }
