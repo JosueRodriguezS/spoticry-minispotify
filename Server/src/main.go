@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"github.com/gorilla/mux"
+	"github.com/gorilla/websocket"
 	"github.com/joho/godotenv"
 )
 
@@ -21,6 +22,12 @@ type Song struct {
 
 var songs []Song
 
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
+}
+
 func main() {
 
 	// Load the .env file using godotenv
@@ -30,13 +37,62 @@ func main() {
 
 	loadSongs()
 
+	//Create a new router
 	r := mux.NewRouter()
+
+	//Define the routes/endpoints and their handlers
 	r.HandleFunc("/songs", getSongList).Methods("GET")
 	r.HandleFunc("/songs", addSong).Methods("POST")
 	r.HandleFunc("/songs/{Name}", getSong).Methods("GET")
+	r.HandleFunc("/search", searchSongs).Methods("GET")
 
-	http.Handle("/", r)
-	http.ListenAndServe(":8080", nil)
+	//Start the HTTP server on port 8080
+	go func() {
+		http.Handle("/", r)
+		if err := http.ListenAndServe(":8080", nil); err != nil {
+			log.Fatal("HTTP server error:", err)
+		}
+	}()
+
+	// Start your WebSocket server in a goroutine
+	go func() {
+		http.HandleFunc("/ws", handleWebSocket)
+		if err := http.ListenAndServe(":8081", nil); err != nil {
+			log.Fatal("WebSocket server error:", err)
+		}
+	}()
+
+	// Keep the main function running
+	select {}
+}
+
+func handleWebSocket(w http.ResponseWriter, r *http.Request) {
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		fmt.Println("Error upgrading to WebSocket:", err)
+		return
+	}
+	defer conn.Close()
+
+	fmt.Println("Cliente conectado")
+
+	for {
+		// Read message from client
+		messageType, p, err := conn.ReadMessage()
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		//Print the message from the client to the server terminal
+		fmt.Printf("Mensaje del cliente: %s\n", p)
+
+		// Write message back to client
+		if err := conn.WriteMessage(messageType, p); err != nil {
+			fmt.Println(err)
+			return
+		}
+	}
 }
 
 func loadSongs() {
@@ -107,4 +163,25 @@ func addSong(w http.ResponseWriter, r *http.Request) {
 
 	// Return the newly added song as the response
 	json.NewEncoder(w).Encode(newSong)
+}
+
+func searchSongs(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	//Parse the HTTP request parameters
+	queryParams := r.URL.Query()
+	genre := queryParams.Get("genre")
+	artist := queryParams.Get("artist")
+	name := queryParams.Get("name")
+
+	// Filter songs by genre and artist
+	var result []Song
+	for _, song := range songs {
+		if (genre == "" || song.Genre == genre) && (artist == "" || song.Artist == artist) && (name == "" || song.Name == name) {
+			result = append(result, song)
+		}
+	}
+
+	// Retrun the filtered songs as the response
+	json.NewEncoder(w).Encode(result)
 }
