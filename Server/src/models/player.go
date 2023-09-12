@@ -21,7 +21,7 @@ type SongPlayer struct {
 }
 
 // Function to open and decode the audio/mp3 file in our current playList
-func OpenAndDecodeMp3File(songName string, songs map[int]Song) (beep.StreamSeekCloser, error) {
+func OpenAndDecodeMp3File(songName string, songs []Song) (beep.StreamSeekCloser, error) {
 	//get song path
 	filepath := BuildSongPath(songName, songs)
 	//check if the file exists

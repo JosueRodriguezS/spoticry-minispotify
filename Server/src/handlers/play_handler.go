@@ -14,14 +14,14 @@ import (
 	"net/http"
 )
 
-func PlayHandler(w http.ResponseWriter, r *http.Request, songMap map[int]models.Song) {
+func PlayHandler(w http.ResponseWriter, r *http.Request, songs []models.Song) {
 	// Use Gorilla mux to get the song name from the URL
 	vars := mux.Vars(r)
 	songName := vars["songName"]
 	fmt.Fprintln(w, "play", songName)
 
 	go func() {
-		Mystreamer, err := models.OpenAndDecodeMp3File("My Number One", songMap)
+		Mystreamer, err := models.OpenAndDecodeMp3File(songName, songs)
 		if err != nil {
 			// Manejar errores aquí, si es necesario.
 			fmt.Println("Error:", err)
