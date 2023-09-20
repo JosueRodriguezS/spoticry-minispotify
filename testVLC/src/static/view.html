@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Song Player</title>
+</head>
+<body>
+    <audio id="audioPlayer" controls></audio>
+    <button id="playButton">Play</button>
+    <button id="pauseButton">Pause</button>
+    <button id="forwardButton">Forward 10s</button>
+    <button id="backwardButton">Backward 10s</button>
+
+    <script>
+        const audioPlayer = document.getElementById('audioPlayer');
+        const playButton = document.getElementById('playButton');
+        const pauseButton = document.getElementById('pauseButton');
+        const forwardButton = document.getElementById('forwardButton');
+        const backwardButton = document.getElementById('backwardButton');
+
+        let audioContext;
+        let audioBuffer;
+        let audioSource;
+
+        // Add event listeners to the buttons (your existing JavaScript code)
+
+        // Ensure that audioContext is defined
+        if (typeof audioContext !== 'undefined') {
+            try {
+                // Fetch the audio buffer from the server
+                fetch('/getAudioBuffer')
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.arrayBuffer();
+                    })
+                    .then(data => {
+                        // Create an AudioBuffer from the received ArrayBuffer
+                        return audioContext.decodeAudioData(data);
+                    })
+                    .then(buffer => {
+                        audioBuffer = buffer;
+                        audioPlayer.src = ''; // Clear the audio player source to avoid conflicts
+                    })
+                    .catch(error => {
+                        console.error('Fetch error:', error);
+                    });
+            } catch (error) {
+                console.error('Error fetching audio buffer:', error);
+            }
+        }
+    </script>
+</body>
+</html>
