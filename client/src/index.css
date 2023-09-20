@@ -1,0 +1,31 @@
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+.container {
+  grid-gap: var(--spacing4);
+  position: relative;
+  padding: var(--spacing4) var(--spacing4);
+  height: 100vh;
+  margin : 20px;
+}
+
+.player {
+  margin: 20px;
+  padding: var(--spacing4) 0; /* Cambia el valor de la segunda propiedad según tus necesidades */
+  display: flex; /* Usa un diseño flexible para alinear los botones horizontalmente */
+}
+
+.player button {
+  margin-right: 3px; /* Agrega margen a la derecha de cada botón para separarlos */
+}
