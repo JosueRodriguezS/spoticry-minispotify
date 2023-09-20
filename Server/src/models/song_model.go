@@ -20,22 +20,31 @@ type SongList struct {
 	songs map[int]Song
 }
 
-func ParseJSONToSongMap(filename string) (map[int]Song, error) {
-	// Read the JSON file
-	data, err := ioutil.ReadFile(filename)
+func ParseJSONToSlice(filename string) ([]Song, error) {
+	var songs []Song
+	// Open our jsonFile
+	jsonFile, err := os.Open(filename)
+	// if we os.Open returns an error then handle it
 	if err != nil {
-		return nil, err
+		fmt.Println(err)
+		return songs, err
 	}
-
-	// Create a map to store songs
-	songMap := make(map[int]Song)
-
-	// Unmarshal the JSON data into a map
-	if err := json.Unmarshal(data, &songMap); err != nil {
-		return nil, err
+	fmt.Println("Successfully Opened", filename)
+	// defer the closing of our jsonFile so that we can parse it later on
+	defer jsonFile.Close()
+	// read our opened jsonFile as a byte array.
+	byteValue, err := ioutil.ReadAll(jsonFile)
+	if err != nil {
+		fmt.Println(err)
+		return songs, err
 	}
-
-	return songMap, nil
+	// we initialize our Users array
+	err = json.Unmarshal(byteValue, &songs)
+	if err != nil {
+		fmt.Println(err)
+		return songs, err
+	}
+	return songs, nil
 }
 
 func CreateSongList() *SongList {
@@ -43,7 +52,7 @@ func CreateSongList() *SongList {
 }
 
 // Function to build a song path
-func BuildSongPath(songName string, songs map[int]Song) string {
+func BuildSongPath(songName string, songs []Song) string {
 	if err := godotenv.Load(); err != nil {
 		fmt.Println("Error al cargar el archivo .env:", err)
 	}
@@ -51,7 +60,7 @@ func BuildSongPath(songName string, songs map[int]Song) string {
 	return os.Getenv("SONGS_PATH") + relativePath
 }
 
-func GetSongRelativePath(name string, songs map[int]Song) string {
+func GetSongRelativePath(name string, songs []Song) string {
 	for _, song := range songs {
 		if song.Name == name {
 			return song.Path
@@ -61,7 +70,7 @@ func GetSongRelativePath(name string, songs map[int]Song) string {
 }
 
 // Function to get a song by its name from the song map
-func GetSongByName(name string, songs map[int]Song) (Song, bool) {
+func GetSongByName(name string, songs []Song) (Song, bool) {
 	for _, song := range songs {
 		if song.Name == name {
 			return song, true
