@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"github.com/rs/cors"
 
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
@@ -37,10 +38,20 @@ func main() {
 
 	// UpdateAddSong
 	r.HandleFunc("/addSong", AddSongJson).Methods("POST")
-
 	r.HandleFunc("/delete/{Name}", deleteSong).Methods("POST")
 
-	http.Handle("/", r)
+	r.HandleFunc("/getBuffer/{Name}", getBuffer).Methods("GET")
+
+
+
+	// Crear un middleware CORS
+    corsMiddleware := cors.New(cors.Options{
+        AllowedOrigins: []string{"http://localhost:3000"}, // Cambia esto según la URL de tu cliente web
+        AllowedMethods: []string{"GET", "POST"}, // Los métodos permitidos
+    })
+	handler := corsMiddleware.Handler(r)
+
+	http.Handle("/", handler)
 	http.ListenAndServe(":8080", nil)
 }
 
@@ -112,6 +123,43 @@ func addSong(w http.ResponseWriter, r *http.Request) {
 
 	// Return the newly added song as the response
 	json.NewEncoder(w).Encode(newSong)
+}
+
+func getBuffer(w http.ResponseWriter, r *http.Request) {
+	// Obtener el nombre del archivo MP3 de los parámetros
+    params := mux.Vars(r)
+    songName := params["Name"]
+
+	// Construir la ruta completa al archivo MP3 utilizando la variable FilePath en la estructura Song
+    var filePath string
+    for _, song := range songs {
+        if song.Name == songName {
+            filePath = os.Getenv("SONGS_PATH") + "/" + song.FilePath
+            break
+        }
+    }
+	if filePath == "" {
+        http.Error(w, "Song not found", http.StatusNotFound)
+        return
+    }
+	// Leer el archivo MP3 en bytes
+    mp3Bytes, err := ioutil.ReadFile(filePath)
+	fmt.Println(filePath)
+    if err != nil {
+        http.Error(w, "Error reading MP3 file", http.StatusInternalServerError)
+        return
+    }
+	// Configurar las cabeceras de la respuesta HTTP
+	w.Header().Set("Content-Type", "audio/mpeg")
+	w.Header().Set("Content-Length", string(len(mp3Bytes)))
+
+	// Escribir los bytes del archivo MP3 en la respuesta HTTP
+	_, err = w.Write(mp3Bytes)
+    if err != nil {
+        http.Error(w, "Error writing MP3 data to response", http.StatusInternalServerError)
+        return
+    }
+
 }
 
 // UpdateAddSong
