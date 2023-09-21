@@ -2,37 +2,61 @@
     {
         "Name": "Never Gonna Give You Up",
         "Genre": "Pop",
-        "FilePath": "songs/never_gonna_give_you_up.mp3",
+        "FilePath": "never_gonna_give_you_up.mp3",
         "Artist": "Rick Astley"
     },
     {
         "Name": "Eye of the Tiger",
         "Genre": "Rock",
-        "FilePath": "songs/eye-of-the-tiger.mp3",
+        "FilePath": "eye-of-the-tiger.mp3",
         "Artist": "Survivor"
     },
     {
         "Name": "Sandstorm",
         "Genre": "Techno",
-        "FilePath": "songs/sandstorm.mp3",
+        "FilePath": "sandstorm.mp3",
         "Artist": "Darude"
     },
     {
         "Name": "Through the Fire and Flames",
         "Genre": "Metal",
-        "FilePath": "songs/through-the-fire-and-flames.mp3",
+        "FilePath": "through-the-fire-and-flames.mp3",
         "Artist": "DragonForce"
     },
     {
         "Name": "We are number one",
         "Genre": "Pop",
-        "FilePath": "songs/we-are-number-one.mp3",
+        "FilePath": "we-are-number-one.mp3",
         "Artist": "Robbie Rotten"
     },
     {
         "Name": "My Number One",
+        "Genre": "Metal",
+        "FilePath": "My Number One.mp3",
+        "Artist": "Dream Evil"
+    },
+    {
+        "Name": "The Cult of Dionysus",
         "Genre": "Pop",
-        "FilePath": "songs/My Number One.mp3",
-        "Artist": "Rick Astley"
+        "FilePath": "the-cult-of-dionysus.mp3",
+        "Artist": "The Orion Experience"
+    },
+    {
+        "Name": "Ad-Infinitum",
+        "Genre": "Experimental",
+        "FilePath": "ad-infinitum.mp3",
+        "Artist": "Stupendium"
+    },
+    {
+        "Name": "Absolute Territory",
+        "Genre": "Pop",
+        "FilePath": "absolute-territory.mp3",
+        "Artist": "Ken Ashcorp"
+    },
+    {
+        "Name": "Ric-King",
+        "Genre": "JPop",
+        "FilePath": "ric_king.mp3",
+        "Artist": "Unknown"
     }
 ]
