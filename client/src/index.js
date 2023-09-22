@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import ReactDOM from 'react-dom';
+import ReactDOM from 'react-dom/client';
 import './index.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlay, faStop, faForward, faBackward } from '@fortawesome/free-solid-svg-icons';
 
 function App() {
+  const [searchType, setSearchType] = useState('firstLetter'); // Valor predeterminado: FirstLetter
+  const [searchValue, setSearchValue] = useState('');
   const [canciones, setCanciones] = useState([]);
   const audioRef = useRef(null);
 
@@ -20,6 +22,17 @@ function App() {
       })
       .catch(error => {
         console.error('Error al cargar canciones:', error);
+      });
+  }
+  function search() {
+    // Realiza la búsqueda según el tipo seleccionado (FirstLetter o WordCount)
+    fetch(`http://localhost:8080/songs/${searchType}/${encodeURIComponent(searchValue)}`)
+      .then(response => response.json())
+      .then(data => {
+        setCanciones(data);
+      })
+      .catch(error => {
+        console.error('Error al realizar la búsqueda:', error);
       });
   }
 
@@ -63,8 +76,39 @@ function App() {
     audioRef.current.currentTime -= 10;
   }
 
+  function getPlaceholderText(searchType) {
+    switch (searchType) {
+      case 'firstLetter':
+        return 'la primera letra';
+      case 'wordcount':
+        return 'el número de palabras';
+      case 'fileSizeRange':
+        return 'el tamaño mínimo en MB';
+      default:
+        return '';
+    }
+  }
   return (
     <div className="container">
+      <div>
+        <h1>Buscar Canciones</h1>
+        {/* Selector para elegir el tipo de búsqueda */}
+        <select value={searchType} onChange={e => setSearchType(e.target.value)}>
+          <option value="firstLetter">Primera Letra</option>
+          <option value="wordcount">Numero de Palabras</option>
+          <option value="fileSizeRange">Peso del archivo</option>
+        </select>
+        {/* Campo de entrada de texto para el valor de búsqueda */}
+        <input
+          type="text"
+          placeholder={`Ingrese ${getPlaceholderText(searchType)}`}
+          value={searchValue}
+          onChange={e => setSearchValue(e.target.value)}
+        />
+        {/* Botón para realizar la búsqueda */}
+        <button onClick={search}>Buscar</button>
+        <button onClick={getCanciones}>Todas las canciones</button>
+      </div>
       <h1>Listado de Canciones</h1>
       <div id="canciones">
         <ul style={{ listStyle: 'none', padding: 0 }}>
