@@ -48,7 +48,7 @@ func main() {
 	//Funciones para buscar canciones
 	r.HandleFunc("/songs/firstLetter/{Letter}", getSongsByFirstLetter).Methods("GET")
 	r.HandleFunc("/songs/wordcount/{Count}", searchSongsByWordCount).Methods("GET")
-	r.HandleFunc("/songs/fileSizeRange/{minSize}/{maxSize}", searchSongsByFileSizeRange).Methods("GET")
+	r.HandleFunc("/songs/fileSizeRange/{minSize}", searchSongsByFileSizeRange).Methods("GET")
 
 	// Crear un middleware CORS
 	corsMiddleware := cors.New(cors.Options{
@@ -294,7 +294,7 @@ func searchSongsByFileSizeRange(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	params := mux.Vars(r)
 	minSizeMBStr := params["minSize"]
-	maxSizeMBStr := params["maxSize"]
+	
 
 	minSizeMB, err := strconv.Atoi(minSizeMBStr)
 	if err != nil {
@@ -302,11 +302,7 @@ func searchSongsByFileSizeRange(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	maxSizeMB, err := strconv.Atoi(maxSizeMBStr)
-	if err != nil {
-		http.Error(w, "Invalid maxSize parameter", http.StatusBadRequest)
-		return
-	}
+	maxSizeMB := minSizeMB + 2
 
 	matchingSongs := []Song{}
 	for _, song := range songs {
