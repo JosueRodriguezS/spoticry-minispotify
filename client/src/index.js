@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlay, faStop, faForward, faBackward, faPlus, faTrash, faSync } from '@fortawesome/free-solid-svg-icons';
+import { faPlay, faStop, faForward, faBackward, faPlus, faTrash, faSync, faStepForward, faMagnifyingGlass, faBars } from '@fortawesome/free-solid-svg-icons';
 
 function App() {
   const [searchType, setSearchType] = useState('firstLetter');
@@ -113,22 +113,21 @@ function App() {
     play(playlist.canciones[0]); // Reproducir la primera canción
   }
 
-  function refreshPlaylist() {
-    // Realizar una solicitud al servidor para obtener la lista de reproducción actualizada
-    fetch('http://localhost:8080/playlist')
-      .then(response => response.json())
-      .then(data => {
-        // Verificar si alguna canción en la lista de reproducción ya no existe
-        const updatedCanciones = currentPlaylist.canciones.filter(song => data.includes(song));
-        
-        // Actualizar la lista de reproducción con las canciones que aún existen
-        setCurrentPlaylist({ ...currentPlaylist, canciones: updatedCanciones });
-      })
-      .catch(error => {
-        console.error('Error al actualizar la lista de reproducción:', error);
-      });
+  function refreshPlaylist(playlistIndex) {
+    if (playlistIndex >= 0 && playlistIndex < playlists.length) {
+      const existingSongs = canciones.map(song => song.name);
+      const playlistToUpdate = playlists[playlistIndex];
+      const updatedPlaylist = {
+        ...playlistToUpdate,
+        canciones: playlistToUpdate.canciones.filter(song =>
+          existingSongs.includes(song)
+        ),
+      };
+      const updatedPlaylists = [...playlists];
+      updatedPlaylists[playlistIndex] = updatedPlaylist;
+      setPlaylists(updatedPlaylists);
+    }
   }
-
 
   function stop() {
     // Detener la reproducción actual
@@ -176,8 +175,12 @@ function App() {
           onChange={e => setSearchValue(e.target.value)}
         />
         {/* Botón para realizar la búsqueda */}
-        <button onClick={search}>Buscar</button>
-        <button onClick={getCanciones}>Todas las canciones</button>
+        <button onClick={search}>
+          <FontAwesomeIcon icon = {faMagnifyingGlass}/> Buscar
+          </button>
+        <button onClick={getCanciones}>
+          <FontAwesomeIcon icon = {faBars}/> Todas las canciones
+          </button>
       </div>
       <h1>Listado de Canciones</h1>
       <div id="canciones">
@@ -193,7 +196,7 @@ function App() {
         </ul>
       </div>
       {/* Elemento <audio> para reproducir el audio */}
-      <audio ref={audioRef} controls style={{ marginTop: '10px' }}>
+      <audio ref={audioRef} controls style={{ marginTop: '10px' }} onEnded={playNextSong}>
         Tu navegador no soporta la reproducción de audio.
       </audio>
       <div className="player">
@@ -219,9 +222,6 @@ function App() {
           <button onClick={() => createPlaylist(currentPlaylist.nombre)}>
             <FontAwesomeIcon icon={faPlus} /> Crear Lista
           </button>
-          <button onClick={() => refreshPlaylist()}>
-            <FontAwesomeIcon icon={faSync} /> Refresh Playlist
-          </button>
         </div>
         <div>
           <ul>
@@ -231,11 +231,14 @@ function App() {
                 <button onClick={() => removePlaylist(index)}>
                   <FontAwesomeIcon icon={faTrash} /> Eliminar
                 </button>
+                <button onClick={() => refreshPlaylist(index)}>
+                  <FontAwesomeIcon icon={faSync} /> Refresh Playlist
+                </button>
                 <button onClick={() => playPlaylist(index)}>
                   <FontAwesomeIcon icon={faPlay} /> Play Playlist
                 </button>
                 <button onClick={playNextSong}>
-                  <FontAwesomeIcon icon={faForward} /> Siguiente
+                  <FontAwesomeIcon icon={faStepForward} /> Siguiente
                 </button>
                 <ul>
                   {playlist.canciones.map(song => (

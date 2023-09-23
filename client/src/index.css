@@ -20,12 +20,71 @@ code {
   margin : 20px;
 }
 
+/* Estilo para el fondo*/
+body {
+  background-color: #92daec;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-attachment: fixed;
+}
+
 .player {
   margin: 20px;
-  padding: var(--spacing4) 0; /* Cambia el valor de la segunda propiedad según tus necesidades */
-  display: flex; /* Usa un diseño flexible para alinear los botones horizontalmente */
+  padding: var(--spacing4) 0; 
+  display: flex; 
 }
 
 .player button {
-  margin-right: 3px; /* Agrega margen a la derecha de cada botón para separarlos */
+  margin-right: 3px; 
+}
+
+/* Estilo para los botones */
+button {
+  background-color: #4289d4; /* Color de fondo del botón */
+  color: #fff; /* Color del texto del botón */
+  margin-right: 15px; /* Margen derecho para separar los botones */
+  margin-top: 5px;
+  margin-bottom: 5px; 
+  border: 5; /* Borde del botón */
+  cursor: pointer; /* Cambia el cursor al pasar sobre el botón */
+}
+
+h1, h2 {
+  background-color: #f1eaea;
+  border: 3px solid #221e1e; /* Borde del título */
+  width: 45%;
+  color: #221e1e; /* Color del texto */
+}
+
+ul {
+  background-color: #f1eaea;
+  color: #221e1e; /* Color del texto */
+  border: 1px solid #221e1e; /* Borde de la lista */
+  padding: 15px; /* Espaciado interno del contenedor */
+}
+
+/* Estilo para los elementos de lista */
+li {
+  margin-bottom: 10px; /* Margen inferior para separar elementos de la lista */
+  margin-right: 10px;
+  margin-left: 10px;
+}
+
+/* Estilo para el campo de entrada de texto */
+input[type="text"] {
+  padding: 10px; /* Espaciado interno del campo de entrada */
+  width: 20%; /* Ancho completo del contenedor */
+  margin-right: 10px; /* Margen derecho para separar el campo de entrada */
+}
+
+/* Estilo para el elemento <audio> */
+audio {
+  width: 20%; /* Ancho completo del contenedor */
+  margin-top: 10px; /* Margen superior para separar el reproductor de audio */
+}
+
+/* Estilo para el selector de canciones (select) */
+select {
+  padding: 5px; /* Espaciado interno del selector */
+  margin-right: 10px; /* Margen derecho para separar el selector */
 }

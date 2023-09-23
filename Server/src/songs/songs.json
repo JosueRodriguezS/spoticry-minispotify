@@ -58,5 +58,23 @@
         "Genre": "JPop",
         "FilePath": "ric_king.mp3",
         "Artist": "Unknown"
+    },
+    {
+        "Name": "A dios le pido",
+        "Genre": "Pop",
+        "FilePath": "a-dios-le-pido.mp3",
+        "Artist": "Juanes"
+    },
+    {
+        "Name": "La camisa negra",
+        "Genre": "Pop",
+        "FilePath": "la-camisa-negra.mp3",
+        "Artist": "Juanes"
+    },
+    {
+        "Name": "Maracas",
+        "Genre": "Mexican",
+        "FilePath": "maracas.mp3",
+        "Artist": "Joan Sebastian y Alberto Vazquez"
     }
 ]
