@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -24,6 +25,7 @@ type Song struct {
 }
 
 var songs []Song
+var beingPlayed Song
 
 func main() {
 
@@ -36,7 +38,6 @@ func main() {
 
 	r := mux.NewRouter()
 	r.HandleFunc("/songs", getSongList).Methods("GET")
-	r.HandleFunc("/songs", addSong).Methods("POST")
 	r.HandleFunc("/songs/{Name}", getSong).Methods("GET")
 
 	// UpdateAddSong
@@ -55,6 +56,9 @@ func main() {
 		AllowedMethods: []string{"GET", "POST"},           // Los métodos permitidos
 	})
 	handler := corsMiddleware.Handler(r)
+
+	// Iniciar el administrador de canciones en una goroutine separada
+	go songsManager()
 
 	http.Handle("/", handler)
 	http.ListenAndServe(":8080", nil)
@@ -104,32 +108,6 @@ func getSong(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Song not found", http.StatusNotFound)
 }
 
-func addSong(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	// Parse the JSON request body into a Song struct
-	var newSong Song
-	err := json.NewDecoder(r.Body).Decode(&newSong)
-	if err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	// Check if a song with the same name already exists
-	for _, existingSong := range songs {
-		if existingSong.Name == newSong.Name {
-			http.Error(w, "Song with the same name already exists", http.StatusConflict)
-			return
-		}
-	}
-
-	// Add the new song to the songs slice
-	songs = append(songs, newSong)
-
-	// Return the newly added song as the response
-	json.NewEncoder(w).Encode(newSong)
-}
-
 func getBuffer(w http.ResponseWriter, r *http.Request) {
 	// Obtener el nombre del archivo MP3 de los parámetros
 	params := mux.Vars(r)
@@ -154,6 +132,15 @@ func getBuffer(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error reading MP3 file", http.StatusInternalServerError)
 		return
 	}
+
+	//Añadir la canción que se está reproduciendo
+	for _, song := range songs {
+		if song.Name == songName {
+			beingPlayed = song
+			break
+		}
+	}
+
 	// Configurar las cabeceras de la respuesta HTTP
 	w.Header().Set("Content-Type", "audio/mpeg")
 	w.Header().Set("Content-Length", string(len(mp3Bytes)))
@@ -220,6 +207,12 @@ func deleteSong(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
 	nameToDelete := params["Name"]
+
+	// Comprueba si la canción que se está reproduciendo es la que se va a eliminar
+	if beingPlayed.Name == nameToDelete {
+		http.Error(w, "Cannot delete song that is being played", http.StatusBadRequest)
+		return
+	}
 
 	// Busca la canción por su nombre y la elimina de la lista
 	for i, song := range songs {
@@ -342,4 +335,133 @@ func searchSongsByFileSizeRange(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(matchingSongs)
+}
+
+// Funcion para iniciar administrador de archivos agregar y eliminar canciones
+func songsManager() {
+	fmt.Println("Bienvenido a la administración de canciones. Ingrese 'help' para ver la lista de comandos disponibles.")
+	scanner := bufio.NewScanner(os.Stdin)
+
+	// Inicia un bucle infinito para leer los comandos del usuario
+	for {
+		fmt.Print("> ")
+		scanner.Scan()
+		command := scanner.Text()
+
+		switch command {
+		case "help":
+			fmt.Println("====================================================================")
+			fmt.Println("Comandos disponibles:")
+			fmt.Println("help | Muestra la lista de comandos disponibles")
+			fmt.Println("add | Agrega una nueva canción")
+			fmt.Println("delete | Elimina una canción")
+			fmt.Println("exit | Cierra el administrador de canciones")
+			fmt.Println("====================================================================")
+		case "exit":
+			fmt.Println("====================================================================")
+			fmt.Println("Cerrando el administrador de canciones...")
+			fmt.Println("====================================================================")
+			return
+		case "add":
+			fmt.Println("====================================================================")
+			fmt.Println("Ingrese la dirección del json de la canción:")
+			fmt.Println("====================================================================")
+			scanner.Scan()
+			myJsonPath := scanner.Text()
+
+			// Lee el archivo json
+			jsonData, err := ioutil.ReadFile(myJsonPath)
+			if err != nil {
+				fmt.Println("====================================================================")
+				fmt.Println("Error al leer el archivo:", err)
+				fmt.Println("====================================================================")
+				continue
+			}
+
+			// Parsea el archivo json y agregar la canción a la lista
+			var newSong Song
+			err = json.Unmarshal(jsonData, &newSong)
+			if err != nil {
+				fmt.Println("====================================================================")
+				fmt.Println("Error al analizar los datos JSON:", err)
+				fmt.Println("====================================================================")
+				continue
+			}
+
+			// Comprueba si ya existe una canción con el mismo nombre
+			for _, existingSong := range songs {
+				if existingSong.Name == newSong.Name {
+					fmt.Println("====================================================================")
+					fmt.Println("Ya existe una canción con el mismo nombre")
+					fmt.Println("====================================================================")
+					continue
+				}
+			}
+
+			// Agrega la nueva canción a la lista
+			songs = append(songs, newSong)
+
+			// Guarda la lista actualizada de canciones en songs.json
+			if err := saveSongsToFile(); err != nil {
+				fmt.Println("====================================================================")
+				fmt.Println("Error al guardar las canciones en el archivo:", err)
+				fmt.Println("====================================================================")
+			} else {
+				fmt.Println("====================================================================")
+				fmt.Println("Canción agregada exitosamente")
+				fmt.Println("====================================================================")
+			}
+		case "delete":
+			fmt.Println("====================================================================")
+			fmt.Println("Ingrese el nombre de la canción que desea eliminar:")
+			fmt.Println("====================================================================")
+			scanner.Scan()
+			nameToDelete := scanner.Text()
+
+			// Comprueba si la canción que se está reproduciendo es la que se va a eliminar
+			if beingPlayed.Name == nameToDelete {
+				fmt.Println("====================================================================")
+				fmt.Println("No se puede eliminar la canción que se está reproduciendo")
+				fmt.Println("====================================================================")
+				continue
+			}
+
+			found := false
+			// Busca la canción por su nombre y la elimina de la lista
+			for i, song := range songs {
+				if song.Name == nameToDelete {
+					// Elimina la canción de la lista
+					songs = append(songs[:i], songs[i+1:]...)
+					found = true
+
+					// Guarda la lista actualizada de canciones en songs.json
+					if err := saveSongsToFile(); err != nil {
+						fmt.Println("====================================================================")
+						fmt.Println("Error al guardar las canciones en el archivo:", err)
+						fmt.Println("====================================================================")
+					} else {
+						fmt.Println("====================================================================")
+						fmt.Println("Canción eliminada exitosamente")
+						fmt.Println("====================================================================")
+					}
+					break
+				}
+			}
+
+			if !found {
+				fmt.Println("====================================================================")
+				fmt.Println("No se encontró la canción")
+				fmt.Println("====================================================================")
+			}
+		default:
+			// Divide el comando en dos partes: el comando y el argumento
+			parts := strings.Split(command, " ")
+			if len(parts) != 2 {
+				fmt.Println("====================================================================")
+				fmt.Println("Comando inválido. Ingrese 'help' para ver la lista de comandos disponibles.")
+				fmt.Println("====================================================================")
+				continue
+			}
+		}
+	}
 }
