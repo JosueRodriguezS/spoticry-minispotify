@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlay, faStop, faForward, faBackward, faPlus, faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faPlay, faStop, faForward, faBackward, faPlus, faTrash, faSync } from '@fortawesome/free-solid-svg-icons';
 
 function App() {
   const [searchType, setSearchType] = useState('firstLetter');
@@ -10,6 +10,8 @@ function App() {
   const [selectedSong, setSelectedSong] = useState('');
   const [canciones, setCanciones] = useState([]);
   const [playlists, setPlaylists] = useState([]);
+  const [currentSongIndex, setCurrentSongIndex] = useState(-1);
+
   const [currentPlaylist, setCurrentPlaylist] = useState({ nombre: '', canciones: [] });
   const audioRef = useRef(null);
 
@@ -93,33 +95,40 @@ function App() {
       });
   }
 
+  function playNextSong() {
+    if (currentSongIndex < currentPlaylist.canciones.length - 1) {
+      setCurrentSongIndex(prevIndex => prevIndex + 1); // Avanzar al siguiente índice
+      play(currentPlaylist.canciones[currentSongIndex + 1]);
+    } else {
+      // La lista de reproducción ha terminado
+      setCurrentSongIndex(-1); // Restablecer el índice al final
+    }
+  }
+
+  // Función para reproducir una lista de reproducción
   function playPlaylist(playlistIndex) {
     const playlist = playlists[playlistIndex];
-    let currentSongIndex = 0;
-  
-    // Función para reproducir la siguiente canción en la lista
-    function playNextSong() {
-      if (currentSongIndex < playlist.canciones.length) {
-        play(playlist.canciones[currentSongIndex]);
-        currentSongIndex++;
-      } else {
-        // La lista de reproducción ha terminado
-        currentSongIndex = 0;
-      }
-    }
-  
-    // Reproducir la primera canción al iniciar la lista de reproducción
-    playNextSong();
-  
-    // Agregar un evento para detectar cuando una canción ha terminado de reproducirse
-    audioRef.current.addEventListener("ended", () => {
-      // Reproducir la siguiente canción
-      playNextSong();
-    });
+    setCurrentPlaylist(playlist); // Establecer la lista de reproducción actual
+    setCurrentSongIndex(0); // Establecer el índice de la canción actual en 0 para iniciar desde el principio
+    play(playlist.canciones[0]); // Reproducir la primera canción
   }
-  
-  
-  
+
+  function refreshPlaylist() {
+    // Realizar una solicitud al servidor para obtener la lista de reproducción actualizada
+    fetch('http://localhost:8080/playlist')
+      .then(response => response.json())
+      .then(data => {
+        // Verificar si alguna canción en la lista de reproducción ya no existe
+        const updatedCanciones = currentPlaylist.canciones.filter(song => data.includes(song));
+        
+        // Actualizar la lista de reproducción con las canciones que aún existen
+        setCurrentPlaylist({ ...currentPlaylist, canciones: updatedCanciones });
+      })
+      .catch(error => {
+        console.error('Error al actualizar la lista de reproducción:', error);
+      });
+  }
+
 
   function stop() {
     // Detener la reproducción actual
@@ -210,44 +219,52 @@ function App() {
           <button onClick={() => createPlaylist(currentPlaylist.nombre)}>
             <FontAwesomeIcon icon={faPlus} /> Crear Lista
           </button>
+          <button onClick={() => refreshPlaylist()}>
+            <FontAwesomeIcon icon={faSync} /> Refresh Playlist
+          </button>
         </div>
-        <ul>
-          {playlists.map((playlist, index) => (
-            <li key={index}>
-              {playlist.nombre}
-              <button onClick={() => removePlaylist(index)}>
-                <FontAwesomeIcon icon={faTrash} /> Eliminar
-              </button>
-              <button onClick={() => playPlaylist(index)}>
-                <FontAwesomeIcon icon={faPlay} /> Play Playlist
-              </button>
-              <ul>
-                {playlist.canciones.map(song => (
-                  <li key={song}>
-                    {song}
-                    <button onClick={() => removeSongFromPlaylist(index, song)}>
-                      <FontAwesomeIcon icon={faTrash} /> Eliminar Canción
-                    </button>
-                    <button onClick={() => play(song)}>
-                      <FontAwesomeIcon icon={faPlay} /> Play
-                    </button>
-                  </li>
-                ))}
-              </ul>
-              <select onChange={e => setSelectedSong(e.target.value)}>
-                <option value="">Seleccionar Canción</option>
-                {canciones.map(song => (
-                  <option key={song.name} value={song.name}>
-                    {song.name}
-                  </option>
-                ))}
-              </select>
-              <button onClick={() => addSongToPlaylist(index, selectedSong)}>
-                Agregar a Lista
-              </button>
-            </li>
-          ))}
-        </ul>
+        <div>
+          <ul>
+            {playlists.map((playlist, index) => (
+              <li key={index}>
+                {playlist.nombre}
+                <button onClick={() => removePlaylist(index)}>
+                  <FontAwesomeIcon icon={faTrash} /> Eliminar
+                </button>
+                <button onClick={() => playPlaylist(index)}>
+                  <FontAwesomeIcon icon={faPlay} /> Play Playlist
+                </button>
+                <button onClick={playNextSong}>
+                  <FontAwesomeIcon icon={faForward} /> Siguiente
+                </button>
+                <ul>
+                  {playlist.canciones.map(song => (
+                    <li key={song}>
+                      {song}
+                      <button onClick={() => removeSongFromPlaylist(index, song)}>
+                        <FontAwesomeIcon icon={faTrash} /> Eliminar Canción
+                      </button>
+                      <button onClick={() => play(song)}>
+                        <FontAwesomeIcon icon={faPlay} /> Play
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+                <select onChange={e => setSelectedSong(e.target.value)}>
+                  <option value="">Seleccionar Canción</option>
+                  {canciones.map(song => (
+                    <option key={song.name} value={song.name}>
+                      {song.name}
+                    </option>
+                  ))}
+                </select>
+                <button onClick={() => addSongToPlaylist(index, selectedSong)}>
+                  Agregar a Lista
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
     </div>
   );
